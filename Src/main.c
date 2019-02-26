@@ -47,6 +47,7 @@
 /* USER CODE BEGIN Includes */
 #include "stm32f4xx_hal_uart.h"
 #include <string.h>
+#include "app_uart.h"
 
 /* USER CODE END Includes */
 
@@ -73,8 +74,6 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void test(void);
-
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -91,9 +90,6 @@ void test(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  char txBuffer[60];
-  char rxBuffer[50];
-  int testCount = 0;
 
   /* USER CODE END 1 */
 
@@ -117,18 +113,9 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_USART1_UART_Init();
+
   /* USER CODE BEGIN 2 */
-  test();
-  while(1) {
-    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    HAL_Delay(1000);
-    sprintf(txBuffer, "Hello %d\n\r", testCount++);
-    HAL_UART_Transmit(&huart1, (uint8_t*)txBuffer, strlen(txBuffer), 1000);
-    sprintf(rxBuffer, "---");
-    HAL_UART_Receive(&huart1, (uint8_t*)rxBuffer, 50, 2000);
-    sprintf(txBuffer, "GOT: %s\n\r", rxBuffer);
-    HAL_UART_Transmit(&huart1, (uint8_t*)txBuffer, strlen(txBuffer), 1000);
-   }
+  app_uart();
 
   /* USER CODE END 2 */
 
@@ -152,11 +139,11 @@ void SystemClock_Config(void)
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /**Configure the main internal regulator output voltage
+  /**Configure the main internal regulator output voltage 
   */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
-  /**Initializes the CPU, AHB and APB busses clocks
+  /**Initializes the CPU, AHB and APB busses clocks 
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
@@ -171,7 +158,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  /**Initializes the CPU, AHB and APB busses clocks
+  /**Initializes the CPU, AHB and APB busses clocks 
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
@@ -211,7 +198,7 @@ void Error_Handler(void)
   * @retval None
   */
 void assert_failed(uint8_t *file, uint32_t line)
-{
+{ 
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */

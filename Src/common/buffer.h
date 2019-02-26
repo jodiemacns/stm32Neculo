@@ -34,14 +34,16 @@ void b_write(T_BUFFER *pBuffer, unsigned char data);
 /**
  * @brief Macro for writing a single character to the buffer.
  */
-//#define b_write(pBuffer, data)                           \
-//      pBuffer->pBuf[pBuffer->write] = data;              \
-//      /* Increment */                                    \
-//      pBuffer->write++;                                  \
-//      pBuffer->write &= pBuffer->size;                   \
-//      pBuffer->nbytes++;                                 \
-//      pBuffer->nbytes &= pBuffer->size;                  \
-//      pBuffer->nbytes += (pBuffer->nbytes == 0 ? 1 : 0)
+#define buff_write_char(pBuffer, data)                                               \
+   if(!( ((pBuffer->write + 1) & pBuffer->size) == (pBuffer->read & pBuffer->size))) \
+   {                                                                                 \
+      pBuffer->pBuf[pBuffer->write] = data;                                          \
+      /* Increment */                                                                \
+      pBuffer->write++;                                                              \
+      pBuffer->write &= pBuffer->size;                                               \
+      pBuffer->nbytes++;                                                             \
+      pBuffer->nbytes &= pBuffer->size;                                              \
+   }
 
 //******************************************************************************
 // Functions

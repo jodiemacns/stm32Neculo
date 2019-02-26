@@ -8,6 +8,7 @@
 #ifndef APP_UART_H
 #define APP_UART_H
 
+void app_uart(void);
 void uartReceive(uint8_t character);
 
 /**

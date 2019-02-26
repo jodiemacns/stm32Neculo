@@ -15,7 +15,8 @@ TARGET = STM32_SAMPLE
 # building variables
 ########################################################
 # optimization
-OPT = -O2
+#OPT = -O2
+OPT = -Og
 
 #########################################################
 # pathes
@@ -50,7 +51,8 @@ C_SOURCES = \
   Src/system_stm32f4xx.c \
   Src/usart.c \
   Src/common/buffer.c \
-  Src/app_uart.c  
+  Src/common/menu.c \
+  Src/app_uart.c 
 
 ASM_SOURCES = \
   SW4STM32/startup_stm32f401xe.s

@@ -1,0 +1,1 @@
+/home/jodie/STM32Toolchain/openocd/bin/openocd -f /home/jodie/STM32Toolchain/openocd/scripts/board/st_nucleo_f4.cfg
