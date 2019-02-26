@@ -46,7 +46,7 @@ void run_command(const MENU_TABLE *pCommands, int num_commands, char *pString)
 {
    for(int count = 0; count < num_commands; count++)
    {
-      if(strncmp(pCommands[count].pCmd, pString, strlen(pCommands[count].pCmd)))
+      if(!(strncmp(pCommands[count].pCmd, pString, strlen(pCommands[count].pCmd))))
       {
          (pCommands[count].mcb)(NULL, 0);
       }

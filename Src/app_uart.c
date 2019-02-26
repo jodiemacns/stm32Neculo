@@ -12,50 +12,60 @@
 #include "buffer.h"
 #include "menu.h"
 
-#define MAX_RX   1
-#define TX_WAIT  1000
-
-extern UART_HandleTypeDef huart1;
-
+//------------------------------------------------------------------------------
+// Macros
+#define MAX_RX           1
+#define TX_WAIT          1000
 #define BUFFER_SIZE_UART (BUFFER_MEDIUM)
 
-T_BUFFER bufferUartRx;
-uint8_t  rxdata[BUFFER_SIZE_UART];
+//------------------------------------------------------------------------------
+// Module Variables
+static T_BUFFER bufferUartRx;             ///< Used for receive buffering.
+static uint8_t rxdata[BUFFER_SIZE_UART];  ///< Used for holding for ::T_BUFFER.
+static uint8_t isr_RxBuffer[MAX_RX * 2];  ///< Used to receive from the hal.
+static uint8_t gotSomething = 0;          ///< Indicates that we received full byte.
+static uint8_t readDataBuffer[BUFFER_SIZE_UART]; ///< Used for reading the bytes once received.
 
-uint8_t aTxStartMessage[] = "\r\n-- APP UART app_uart 2: " __TIME__ "-- \r\n";
-uint8_t aRxBuffer[MAX_RX * 2];
-uint8_t gotSomething = 0;
-uint8_t readDataBuffer[BUFFER_SIZE_UART];
+//------------------------------------------------------------------------------
+// Functions 
 static void appPrint(char *pData);
-int toggleLED(unsigned char *pData, int length);
-int printHelp(unsigned char *pData, int length);
-void startMenu(void);
+static int toggleLED(unsigned char *pData, int length);
+static int printHelp(unsigned char *pData, int length);
+static void startMenu(void);
 
-const MENU_TABLE commandTable[] = 
+///! Command table used to display the help menu
+static const   MENU_TABLE commandTable[] = 
 { 
    { "?",     "Print help",     printHelp },
    { "toggle","Toggle the LED", toggleLED }
 };       
 
+#define CMD_TBL_SIZE (sizeof(commandTable) / sizeof(MENU_TABLE))
+
+//------------------------------------------------------------------------------
+// External dependancies 
+extern UART_HandleTypeDef huart1;
+
+//------------------------------------------------------------------------------
 /**
   * @brief app_uart will just do a simple test of the uart 
   * @retval None
   */
+//------------------------------------------------------------------------------
 void app_uart(void)
 {
-   memset(&bufferUartRx, 0, sizeof(T_BUFFER));
-   
    // Initialize the UART receive buffer
+   memset(&bufferUartRx, 0, sizeof(T_BUFFER));
    bufferUartRx.size = BUFFER_SIZE_UART;
    bufferUartRx.pBuf = rxdata;
    initBuffer(&bufferUartRx);
 
-   
-   HAL_UART_Transmit(&huart1, (uint8_t *)aTxStartMessage, sizeof(aTxStartMessage), TX_WAIT);
-   HAL_UART_Receive_IT(&huart1, (uint8_t *)aRxBuffer, MAX_RX);
-   HAL_Delay(100);
-   appPrint("Hello there\n");
-   HAL_Delay(1000);
+   // display the header message 
+   appPrint("\n-------------------------------------------------\n");
+   appPrint("-- APP UART app_uart 3:\n");
+   appPrint("-------------------------------------------------\n");
+
+   HAL_UART_Receive_IT(&huart1, (uint8_t *)isr_RxBuffer, MAX_RX);
    startMenu();
    
    while(1) {
@@ -66,9 +76,7 @@ void app_uart(void)
          (void)readBuffer(&bufferUartRx, readDataBuffer, BUFFER_SIZE_UART);
          appPrint("GOT::");
          appPrint((char*)readDataBuffer);
-         
-//         HAL_UART_Receive_IT(&huart1, (uint8_t *)aRxBuffer, MAX_RX);
-//         HAL_UART_Transmit(&huart1, readDataBuffer, rlen, TX_WAIT);
+         run_command(commandTable, CMD_TBL_SIZE, (char*)readDataBuffer);
          gotSomething = 0;
       }
    }
@@ -88,7 +96,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
    /* NOTE : This function should not be modified, when the callback is needed,
             the HAL_UART_RxCpltCallback can be implemented in the user file
    */
-    uartReceive(*aRxBuffer);
+    uartReceive(*isr_RxBuffer);
     return;
 }
 
@@ -106,7 +114,7 @@ void uartReceive(uint8_t rchar)
 
    // Echo the character
    HAL_UART_Transmit(&huart1, &rchar, 1,TX_WAIT);
-   HAL_UART_Receive_IT(&huart1, (uint8_t *)aRxBuffer, MAX_RX);
+   HAL_UART_Receive_IT(&huart1, (uint8_t *)isr_RxBuffer, MAX_RX);
 
    return;
 }
@@ -143,10 +151,12 @@ static void appPrint(char *pData)
 
 int toggleLED(unsigned char *pData, int length)
 {
+   appPrint("Todo Toggle the LED\n");
    return(0);
 }
 
 int printHelp(unsigned char *pData, int length)
 {
+   appPrint("Todo Print the help menu\n");
    return(0);
 }
