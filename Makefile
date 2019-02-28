@@ -50,6 +50,7 @@ C_SOURCES = \
   Src/stm32f4xx_it.c \
   Src/system_stm32f4xx.c \
   Src/usart.c \
+  Src/tim.c \
   Src/common/buffer.c \
   Src/common/menu.c \
   Src/app_uart.c 

@@ -18,6 +18,13 @@
 #define TX_WAIT          1000
 #define BUFFER_SIZE_UART (BUFFER_MEDIUM)
 
+typedef enum
+{
+   LED_ON,
+   LED_OFF,
+   LED_FLASH
+}LED_STATE;
+
 //------------------------------------------------------------------------------
 // Module Variables
 static T_BUFFER bufferUartRx;             ///< Used for receive buffering.
@@ -25,6 +32,7 @@ static uint8_t rxdata[BUFFER_SIZE_UART];  ///< Used for holding for ::T_BUFFER.
 static uint8_t isr_RxBuffer[MAX_RX * 2];  ///< Used to receive from the hal.
 static uint8_t gotSomething = 0;          ///< Indicates that we received full byte.
 static uint8_t readDataBuffer[BUFFER_SIZE_UART]; ///< Used for reading the bytes once received.
+static LED_STATE ledState = LED_FLASH;
 
 //------------------------------------------------------------------------------
 // Functions 
@@ -36,8 +44,8 @@ static void startMenu(void);
 ///! Command table used to display the help menu
 static const   MENU_TABLE commandTable[] = 
 { 
-   { "?",     "Print help",     printHelp },
-   { "toggle","Toggle the LED", toggleLED }
+   { "?",     "Print help",                          printHelp },
+   { "led",   "Toggle the [LED / ON / OFF / FLASH]", toggleLED }
 };       
 
 #define CMD_TBL_SIZE (sizeof(commandTable) / sizeof(MENU_TABLE))
@@ -45,6 +53,7 @@ static const   MENU_TABLE commandTable[] =
 //------------------------------------------------------------------------------
 // External dependancies 
 extern UART_HandleTypeDef huart1;
+extern TIM_HandleTypeDef  htim3;
 
 //------------------------------------------------------------------------------
 /**
@@ -67,38 +76,30 @@ void app_uart(void)
 
    HAL_UART_Receive_IT(&huart1, (uint8_t *)isr_RxBuffer, MAX_RX);
    startMenu();
+
+   // Start the timer;
+   HAL_TIM_Base_Start_IT(&htim3);
    
    while(1) {
-      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-      HAL_Delay(1000);
+      HAL_Delay(10);
       if(gotSomething)
       {
+         int rVal;
+         memset(readDataBuffer, 0, BUFFER_SIZE_UART);
          (void)readBuffer(&bufferUartRx, readDataBuffer, BUFFER_SIZE_UART);
-         appPrint("GOT::");
-         appPrint((char*)readDataBuffer);
-         run_command(commandTable, CMD_TBL_SIZE, (char*)readDataBuffer);
+         rVal = run_command(commandTable, CMD_TBL_SIZE, (char*)readDataBuffer);
+         if(rVal < 0)
+         {
+            appPrint("Command not found: ");
+            appPrint((char*)readDataBuffer);
+            appPrint("\n");
+         }
          gotSomething = 0;
       }
    }
    return;
 }
 
-/**
-  * @brief Rx Transfer completed callback
-  * @param huart: UART handle
-  * @retval None
-  */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-  /* Prevent unused argument(s) compilation warning */
-  UNUSED(huart);
-
-   /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_UART_RxCpltCallback can be implemented in the user file
-   */
-    uartReceive(*isr_RxBuffer);
-    return;
-}
 
 void uartReceive(uint8_t rchar)
 {
@@ -152,11 +153,66 @@ static void appPrint(char *pData)
 int toggleLED(unsigned char *pData, int length)
 {
    appPrint("Todo Toggle the LED\n");
+
+   if(!strncmp((char *)pData, "led ON", strlen("led ON")))
+   {
+      appPrint("::ON\n");
+      ledState = LED_ON;
+   }
+   if(!strncmp((char *)pData, "led OFF", strlen("led OFF")))
+   {
+      ledState = LED_OFF;
+      appPrint("::OFF\n");
+   }
+   if(!strncmp((char *)pData, "led FLASH", strlen("led FLASH")))
+   {
+      ledState = LED_FLASH;
+      appPrint("::FLASH\n");
+   }
    return(0);
 }
 
 int printHelp(unsigned char *pData, int length)
 {
-   appPrint("Todo Print the help menu\n");
+   print_menu(commandTable, (sizeof(commandTable) / sizeof(MENU_TABLE)));
    return(0);
+}
+
+/**
+  * @brief Rx Transfer completed callback
+  * @param huart: UART handle
+  * @retval None
+  */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(huart);
+
+   /* NOTE : This function should not be modified, when the callback is needed,
+            the HAL_UART_RxCpltCallback can be implemented in the user file
+   */
+    uartReceive(*isr_RxBuffer);
+    return;
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+   /* Prevent unused argument(s) compilation warning */
+   UNUSED(htim);
+   /* NOTE : This function Should not be modified, when the callback is needed,
+            the __HAL_TIM_PeriodElapsedCallback could be implemented in the user file
+   */
+   if(ledState == LED_ON)
+   {
+      HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+   }
+   if(ledState == LED_OFF)
+   {
+      HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+   }
+   if(ledState == LED_FLASH)
+   {
+       HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+   }
+   return;
 }

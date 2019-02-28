@@ -20,4 +20,4 @@ typedef struct
 
 int initialize_menu(MENU *p_menu);
 void print_menu(const MENU_TABLE *pCommands, int num_commands);
-void run_command(const MENU_TABLE *pCommands, int num_commands, char *pString);
+int run_command(const MENU_TABLE *pCommands, int num_commands, char *pString);
